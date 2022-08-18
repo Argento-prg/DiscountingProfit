@@ -5,25 +5,35 @@ class Service:
     # Входные данные
 
     # список чистой прибыли
-    __netProfitList = [float]
+    __netProfitList = []
     # список амортизационных отчислений
-    __depreciationDeductionsList = [float]
+    __depreciationDeductionsList = []
     # список инвестиций
-    __investmentsList = [float]
+    __investmentsList = []
     # список коэффициентов дисконтирования
-    __koefDiscountList = [float]
+    __koefDiscountList = []
     # счётчик лет
     __yearsCounter = 0
 
     # Выходные данные
 
     # список денежного потока
-    __cashFlowList = [float]
+    __cashFlowList = []
     # список дисконтированного денежного потока
-    __discountCashFlowList = [float]
+    __discountCashFlowList = []
     # список дисконтированного денежного потока нарастающим итогом
-    __risingDiscountCashFlowList = [float]
+    __risingDiscountCashFlowList = []
     
+    
+    # инициализация сервиса
+    def __init__(self):
+        self.__fillFirstPageData()
+    
+    # заполнение первой страницы элементов
+    def __fillFirstPageData(self):
+        self.addElemsToDataList(0, 0, 0, 0)
+        self.calcOutputData()
+
     # добавление данных в списки
     def addElemsToDataList(self, netProfit: float, depreciationDeductions: float, investments: float, koefDiscount: float) -> bool:
         result = True
@@ -37,7 +47,7 @@ class Service:
             self.__cashFlowList.append(0)
             self.__discountCashFlowList.append(0)
             self.__risingDiscountCashFlowList.append(0)
-        except(...):
+        except(Exception):
             result = False
         
         return result
@@ -56,7 +66,7 @@ class Service:
                 koefDiscount=self.__koefDiscountList[idx]
             )
             return data
-        except(...):
+        except(Exception):
             return dict(error='Fail')
 
     # изменение данных за один год
@@ -72,7 +82,7 @@ class Service:
             self.__koefDiscountList[idx] = data['koefDiscount']
 
             return True
-        except(...):
+        except(Exception):
             return False
     
     # сброс всех данных
@@ -87,19 +97,21 @@ class Service:
         self.__discountCashFlowList.clear()
         self.__risingDiscountCashFlowList.clear()
 
+        self.__fillFirstPageData()
+
     # расчёт выходных данных
     def calcOutputData(self) -> bool:
         result = True
         try:
             for i in range(self.__yearsCounter):
                 self.__cashFlowList[i] = cl.calcCashFlow(self.__netProfitList[i], self.__depreciationDeductionsList[i], self.__investmentsList[i])
-                self.__discountCashFlowList[i] = cl.calcDiscountCashFlow(self.__cashFlow[i], self.__koefDiscountList[i])
+                self.__discountCashFlowList[i] = cl.calcDiscountCashFlow(self.__cashFlowList[i], self.__koefDiscountList[i])
                 # если это не первая итерация, то используем предыдущее значение дисконтированного денежного потока нарастающим итогом
                 prev = 0
                 if i != 0:
                     prev = self.__risingDiscountCashFlowList[i-1]
                 self.__risingDiscountCashFlowList[i] = cl.calcRisingDiscountCashFlow(prev, self.__discountCashFlowList[i])
-        except(...):
+        except(Exception):
             result = False
         return result
 
@@ -116,7 +128,7 @@ class Service:
                 risingDiscountCashFlow=self.__risingDiscountCashFlowList[idx]
             )
             return data
-        except(...):
+        except(Exception):
             return dict(error='Fail')
     
     # получение счётчика числа лет
