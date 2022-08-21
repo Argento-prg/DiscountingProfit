@@ -1,4 +1,7 @@
+from distutils.log import error
 import calculate as cl
+import csv
+import validate
 
 class Service:
 
@@ -47,7 +50,7 @@ class Service:
             self.__cashFlowList.append(0)
             self.__discountCashFlowList.append(0)
             self.__risingDiscountCashFlowList.append(0)
-        except(Exception):
+        except Exception as exc:
             result = False
         
         return result
@@ -66,23 +69,27 @@ class Service:
                 koefDiscount=self.__koefDiscountList[idx]
             )
             return data
-        except(Exception):
+        except Exception as exc:
             return dict(error='Fail')
 
     # изменение данных за один год
     def changeInputDataForTheOneYear(self, year: int, data: dict) -> bool:
         if year > self.__yearsCounter or year < 1:
-            return dict(error='Year is not valid')
+            return False
         
+        data = validate.validateInputData(data)
+        if data.get('error'):
+            return False
+
         try:
             idx = year - 1
-            self.__netProfitList[idx] = data['netProfit'],
-            self.__depreciationDeductionsList[idx] = data['depreciationDeductions'],
-            self.__investmentsList[idx] = data['investments'],
+            self.__netProfitList[idx] = data['netProfit']
+            self.__depreciationDeductionsList[idx] = data['depreciationDeductions']
+            self.__investmentsList[idx] = data['investments']
             self.__koefDiscountList[idx] = data['koefDiscount']
 
             return True
-        except(Exception):
+        except Exception as exc:
             return False
     
     # сброс всех данных
@@ -111,7 +118,7 @@ class Service:
                 if i != 0:
                     prev = self.__risingDiscountCashFlowList[i-1]
                 self.__risingDiscountCashFlowList[i] = cl.calcRisingDiscountCashFlow(prev, self.__discountCashFlowList[i])
-        except(Exception):
+        except Exception as exc:
             result = False
         return result
 
@@ -128,10 +135,38 @@ class Service:
                 risingDiscountCashFlow=self.__risingDiscountCashFlowList[idx]
             )
             return data
-        except(Exception):
+        except Exception as exc:
             return dict(error='Fail')
     
     # получение счётчика числа лет
     def getYearsCounter(self):
         return self.__yearsCounter
         
+    # экспортируем все данные в csv-файл
+    def exportDataToCSV(self):
+        with open('report.csv', 'w', newline='') as csvfile:
+            fieldnames = [
+                'Год', 
+                'Чистая прибыль, руб.', 
+                'Амортизационные отчисления, руб.', 
+                'Инвестиции, руб.', 'Денежный поток, руб.', 
+                'Коэффициент дисконтирования', 
+                'Дисконтированный денежный поток, руб.', 
+                'Дисконтированный денежный поток нарастающим итогом, руб.'
+            ]
+            writer = csv.writer(csvfile,  delimiter=';')
+            writer.writerow(fieldnames)
+
+            for i in range(self.__yearsCounter):
+                writer.writerow([
+                    i + 1, 
+                    self.__netProfitList[i], 
+                    self.__depreciationDeductionsList[i], 
+                    self.__investmentsList[i], 
+                    self.__cashFlowList[i], 
+                    self.__koefDiscountList[i], 
+                    self.__discountCashFlowList[i], 
+                    self.__risingDiscountCashFlowList[i]
+                ])
+            
+
